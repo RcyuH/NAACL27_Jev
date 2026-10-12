@@ -1,0 +1,25 @@
+# CPU-only follow-up protocol. Does not change existing reproduce.yaml paths.
+# Freeze these settings before seeing the new results; this remains exploratory.
+labels: [toxicity, identity_attack, obscene, insult]
+audit_edges:
+  - [toxicity, identity_attack]
+  - [toxicity, obscene]
+  - [toxicity, insult]
+rates: [0.20, 0.10, 0.05, 0.02]
+matrix_rates: [0.10, 0.05]
+bootstrap_resamples: 2000
+null_resamples: 2000
+confidence_level: 0.95
+minimum_valid_fraction: 0.95
+# Absolute probability units, not quantiles. Common support compared across all h.
+bandwidths: [0.005, 0.01, 0.02]
+local_grid_size: 1001
+minimum_kernel_ess: 50
+bin_counts: [5, 10, 20, 40, 80]
+matrix_bins: 10
+min_per_group: 50
+null_models: [platt, spline]
+calibration_ridge: 1.0
+calibration_grid_size: 2049
+ece_bins: 15
+examples_per_bin_group: 3

@@ -9,6 +9,26 @@ bin-count sensitivity, continuous restricted-cubic-spline calibration curves,
 within-bin permutation tests, soft-label analysis, prompt sensitivity, and a
 second-model comparison.
 
+## New: score-resolution and held-out follow-up audit
+
+The CPU-only `strengthen` command adds local score balancing, fitted-null
+binning diagnostics, held-out recalibration with full refitting bootstrap,
+and all 12 directed label pairs. It reuses existing OpenJev/OneJev predictions,
+does not require another model run, and writes separate resumable results.
+It does **not** reuse the legacy continuous-spline uncertainty estimates.
+
+Full offline run (2,000 resamples; all configured prediction sets):
+
+```bash
+bash scripts/run_strengthening_full.sh configs/reproduce.yaml results/strengthening_v1 8
+```
+
+See [the full command guide and statistical protocol](docs/STRENGTHENING.md)
+for local prediction paths, assumptions, outputs, report regeneration, and
+the archive to send back for review. The only new config is
+`configs/strengthen.yaml`; keep your existing server-specific paths in
+`configs/reproduce.yaml`.
+
 ## Decisions made for underspecified details
 
 All decisions live in `configs/reproduce.yaml`; its SHA-256 is written into

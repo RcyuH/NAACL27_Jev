@@ -30,9 +30,12 @@ def build_parser() -> argparse.ArgumentParser:
     infer.add_argument("--prompt-set", help="Prompt set defined under model.prompt_sets")
     infer.add_argument("--model-profile", help="Endpoint/model override under model.profiles")
     analyze = subparsers.add_parser("analyze", help="Run bootstrap audit, controls, tables, plots")
-    analyze.add_argument("--quick", action="store_true", help="Use 50 bootstrap samples for smoke tests")
+    analyze.add_argument(
+        "--quick", action="store_true", help="Use 50 bootstrap samples for smoke tests"
+    )
     robustness = subparsers.add_parser(
-        "robustness", help="Run calibration, binning, spline, permutation, label, prompt/model checks"
+        "robustness",
+        help="Run calibration, binning, spline, permutation, label, prompt/model checks",
     )
     robustness.add_argument("--quick", action="store_true", help="Use small resample counts")
     robustness.add_argument(
@@ -40,7 +43,32 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Fail if a configured prompt/model prediction set is missing",
     )
-    subparsers.add_parser("report", help="Regenerate all LaTeX tables and figures from saved results")
+    subparsers.add_parser(
+        "report", help="Regenerate all LaTeX tables and figures from saved results"
+    )
+    strengthen = subparsers.add_parser(
+        "strengthen",
+        help="CPU-only score balancing, fitted-null, held-out calibration, all-pairs audit",
+    )
+    strengthen.add_argument("--settings", default="configs/strengthen.yaml")
+    strengthen.add_argument("--output-dir", help="Separate resumable output directory")
+    strengthen.add_argument(
+        "--prediction-set",
+        action="append",
+        dest="prediction_sets",
+        help="Configured robustness prediction-set name; repeat to select several",
+    )
+    strengthen.add_argument(
+        "--stage", action="append", choices=["local", "null", "recalibration", "matrix"]
+    )
+    strengthen.add_argument("--workers", type=int, default=1)
+    strengthen.add_argument(
+        "--quick", action="store_true", help="Development only; NOT paper results"
+    )
+    followup_report = subparsers.add_parser(
+        "strengthen-report", help="Rebuild follow-up figures/tables only"
+    )
+    followup_report.add_argument("--output-dir")
     return parser
 
 
@@ -50,9 +78,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.command == "prepare":
         result = prepare_all(config)
     elif args.command == "infer":
-        datasets = (
-            ["civil_comments", "goemotions"] if args.dataset == "all" else [args.dataset]
-        )
+        datasets = ["civil_comments", "goemotions"] if args.dataset == "all" else [args.dataset]
         result = {
             dataset: asyncio.run(
                 infer_dataset(
@@ -75,6 +101,24 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
     elif args.command == "report":
         result = regenerate_reports(config)
+    elif args.command == "strengthen":
+        from .strengthen import run_strengthening
+
+        result = run_strengthening(
+            config,
+            settings_path=args.settings,
+            output_dir=args.output_dir,
+            prediction_sets=args.prediction_sets,
+            stages=args.stage,
+            workers=args.workers,
+            quick=bool(args.quick),
+        )
+    elif args.command == "strengthen-report":
+        from .strengthen_reporting import generate_strengthening_report
+
+        result = generate_strengthening_report(
+            args.output_dir or Path(config["paths"]["results_dir"]) / "strengthening"
+        )
     else:
         raise AssertionError(args.command)
     print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False))
